@@ -1,0 +1,126 @@
+#include <IRremote.h>
+#include <Servo.h>
+Servo SM;
+int rcv=2;
+IRrecv ir(rcv);
+decode_results results;
+int leftMotorForward = 12;     /* GPIO2(D4) -> IN3   */
+int rightMotorForward =9;   /* GPIO15(D8) -> IN1  */
+int leftMotorBackward =11;    /* GPIO0(D3) -> IN4   */
+int rightMotorBackward =8;  /* GPIO13(D7) -> IN2  */
+
+
+/* define L298N or L293D enable pins */
+
+int trigpin=5;
+int echo=6;
+int distance;
+void setup() {
+  ir.enableIRIn();
+pinMode(leftMotorForward, OUTPUT);
+  pinMode(rightMotorForward, OUTPUT); 
+  pinMode(leftMotorBackward, OUTPUT);  
+  pinMode(rightMotorBackward, OUTPUT);
+
+  /* initialize motor enable pins as output */
+  pinMode(trigpin, OUTPUT);
+  pinMode(echo, INPUT);
+
+  SM.attach(7);
+  SM.write(90);
+  delay(3000);
+
+
+}
+//int distance;
+void loop() {
+  // put your main code here, to run repeatedly:
+  if (ir.decode(&results)) {
+  findDistance() ;
+  if (distance > 20) {
+    forward();
+  } else {
+    findDistance();
+    if (distance > 20) {
+      forward();
+    } else {
+      Stop();
+      SM.write(40);
+      delay(500);
+      findDistance();
+      if (distance>20){
+        SM.write(90);
+        delay(1000);
+        rightward();
+        delay(500);
+        Stop();
+      }else{
+        SM.write(130);
+        delay(1000);
+        findDistance();
+        if (distance>20){
+          SM.write(90);
+          delay(1000);
+          leftward();
+          delay(500);
+          Stop();
+        }else{
+          SM.write(90);
+          delay(1000);
+          rightward();
+          delay(1000);
+          Stop();
+          ir.resume();
+          if (results.value==-2139111361){
+            Stop();
+          }
+        }
+      }
+    }
+  }
+  }
+}
+void forward() {
+  digitalWrite(leftMotorBackward,HIGH);
+  digitalWrite(rightMotorBackward,HIGH);
+  digitalWrite(leftMotorForward,LOW);
+  digitalWrite(rightMotorForward,LOW);
+}
+void backward() {
+ 
+  digitalWrite(leftMotorForward,HIGH);
+  digitalWrite(rightMotorForward,HIGH);
+  digitalWrite(leftMotorBackward,LOW);
+  digitalWrite(rightMotorBackward,LOW);
+ 
+}
+void leftward() {
+  digitalWrite(leftMotorForward,LOW);
+  digitalWrite(rightMotorForward,HIGH);
+  digitalWrite(rightMotorBackward,LOW);
+  digitalWrite(leftMotorBackward,HIGH);
+}
+void rightward() {
+   digitalWrite(leftMotorForward,HIGH);
+  digitalWrite(rightMotorForward,LOW);
+  digitalWrite(rightMotorBackward,HIGH);
+  digitalWrite(leftMotorBackward,LOW);
+ }
+void Stop() {
+  digitalWrite(leftMotorForward,LOW);
+  digitalWrite(leftMotorBackward,LOW);
+  digitalWrite(rightMotorForward,LOW);
+  digitalWrite(rightMotorBackward,LOW);
+}
+
+void findDistance() {
+  int duration;
+  digitalWrite(trigpin, HIGH);
+  delayMicroseconds(10);
+  digitalWrite(trigpin, LOW);
+
+  duration = pulseIn(echo, HIGH);
+  distance = (1 / 29.1) * (duration / 2);
+  //delay(1000);
+
+}
